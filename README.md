@@ -1,4 +1,4 @@
-#KernelChecker
+# KernelChecker
 
 _kernelcheker.py_
 KernelChecker was created to allow control panels to easily detect & advise
