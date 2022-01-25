@@ -80,6 +80,16 @@ def myprint(silent, message):
         print(message)
 
 
+def kmod_is_signed():
+    try:
+        url = 'https://patches.kernelcare.com/' + get_kernel_hash() + '/latest.v2'
+        latest = urlopen(url).read().decode('utf-8')
+        url = 'https://patches.kernelcare.com/' + get_kernel_hash() + '/' + latest + '/kcare.ko'
+        return urlopen(url).read()[-28:] == b'~Module signature appended~\n'
+    except Exception:
+        return False
+
+
 def main():
     """
     if --silent or -q argument provided, don't print anything, just use exit code
@@ -87,10 +97,10 @@ def main():
     else exit with 0 if COMPATIBLE, 1 or more otherwise
     """
     silent = len(sys.argv) > 1 and (sys.argv[1] == '--silent' or sys.argv[1] == '-q')
-    if is_secure_boot():
+    if is_secure_boot() and not kmod_is_signed():
         myprint(silent, "UNSUPPORTED; SECURE BOOT")
         return 3
-    if inside_vz_container() or inside_lxc_container() or is_secure_boot():
+    if inside_vz_container() or inside_lxc_container():
         myprint(silent, "UNSUPPORTED; INSIDE CONTAINER")
         return 2
     if is_compat():
