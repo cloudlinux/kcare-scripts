@@ -39,29 +39,6 @@ def inside_vz_container():
     return os.path.exists('/proc/vz/veinfo') and not os.path.exists('/proc/vz/version')
 
 
-def _get_last_byte_from(filename):
-    """ Reading the last byte from the varfile
-    :return: last byte in a file as unsigned int or None if file was empty
-    """
-    with open(filename, 'rb') as f:
-        last, = struct.unpack("B", f.read()[-1:])
-        return last
-
-
-def is_secure_boot():
-    """ Detects Secure Boot
-    :return: True if Secure Boot is enabled, false otherwise
-    """
-    efivars_location = "/sys/firmware/efi/efivars/"
-    if not os.path.isdir(efivars_location):
-        return False
-    for filename in os.listdir(efivars_location):
-        if filename.startswith('SecureBoot'):
-            varfile = os.path.join(efivars_location, filename)
-            return _get_last_byte_from(varfile) == 1
-    return False
-
-
 def inside_lxc_container():
     return '/lxc/' in open('/proc/1/cgroup').read()
 
@@ -80,16 +57,6 @@ def myprint(silent, message):
         print(message)
 
 
-def kmod_is_signed():
-    try:
-        url = 'https://patches.kernelcare.com/' + get_kernel_hash() + '/latest.v2'
-        latest = urlopen(url).read().decode('utf-8')
-        url = 'https://patches.kernelcare.com/' + get_kernel_hash() + '/' + latest + '/kcare.ko'
-        return urlopen(url).read()[-28:] == b'~Module signature appended~\n'
-    except Exception:
-        return False
-
-
 def main():
     """
     if --silent or -q argument provided, don't print anything, just use exit code
@@ -97,9 +64,6 @@ def main():
     else exit with 0 if COMPATIBLE, 1 or more otherwise
     """
     silent = len(sys.argv) > 1 and (sys.argv[1] == '--silent' or sys.argv[1] == '-q')
-    if is_secure_boot() and not kmod_is_signed():
-        myprint(silent, "UNSUPPORTED; SECURE BOOT")
-        return 3
     if inside_vz_container() or inside_lxc_container():
         myprint(silent, "UNSUPPORTED; INSIDE CONTAINER")
         return 2
