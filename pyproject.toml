@@ -1,0 +1,30 @@
+[project]
+name = "kcare-scripts"
+version = "1.0"
+description = "KernelCare compatibility checking and kernel analysis scripts"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+authors = [
+    {name = "Igor Seletskiy", email = "i@kernelcare.com"}
+]
+maintainers = [
+    {name = "Igor Seletskiy", email = "i@kernelcare.com"},
+    {name = "Rinat Sabitov", email = "rsabitov@cloudlinux.com"}
+]
+license = {text = "Apache-2.0"}
+keywords = ["kernel", "kernelcare", "compatibility", "linux", "security"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Operating System Kernels :: Linux",
+    "Topic :: System :: Systems Administration",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]

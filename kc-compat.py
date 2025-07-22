@@ -5,8 +5,9 @@ import os
 
 try:
     from urllib.request import urlopen
+    from urllib.error import HTTPError, URLError
 except ImportError:
-    from urllib2 import urlopen
+    from urllib2 import urlopen, HTTPError, URLError
 
 __author__ = 'Igor Seletskiy'
 __copyright__ = "Copyright (c) Cloud Linux GmbH & Cloud Linux Software, Inc"
@@ -43,13 +44,54 @@ def inside_lxc_container():
     return '/lxc/' in open('/proc/1/cgroup').read()
 
 
+def get_distro_info():
+    
+    def parse_value(line):
+        return line.split('=', 1)[1].strip().strip('"\'')
+    
+    os_release_path = '/etc/os-release'
+    if not os.path.exists(os_release_path):
+        return None, None
+
+    distro_name = None
+    distro_version = None
+    
+    try:
+        with open(os_release_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('ID='):
+                    distro_name = parse_value(line)
+                elif line.startswith('VERSION_ID='):
+                    distro_version = parse_value(line)
+                if distro_name and distro_version:
+                    break
+    except (IOError, OSError):
+        return None, None
+    
+    return distro_name, distro_version
+
+
+def is_distro_supported(distro_name, distro_version):
+    """
+    Check if the given distro name and version combination is supported
+    TODO: Implement actual supported distro checking logic
+    """
+    return False
+
+
 def is_compat():
     url = 'http://patches.kernelcare.com/' + get_kernel_hash() + '/version'
     try:
         urlopen(url)
         return True
-    except Exception:
-        return False
+    except HTTPError as e:
+        if e.code == 404:
+            return False
+        else:
+            raise
+    except URLError:
+        raise
 
 
 def myprint(silent, message):
@@ -67,12 +109,32 @@ def main():
     if inside_vz_container() or inside_lxc_container():
         myprint(silent, "UNSUPPORTED; INSIDE CONTAINER")
         return 2
-    if is_compat():
-        myprint(silent, "COMPATIBLE")
-        return 0
-    else:
-        myprint(silent, "UNSUPPORTED")
-        return 1
+    
+    try:
+        if is_compat():
+            myprint(silent, "COMPATIBLE")
+            return 0
+        else:
+            # Check if distro is supported when kernel is not
+            distro_name, distro_version = get_distro_info()
+            if distro_name and distro_version and is_distro_supported(distro_name, distro_version):
+                myprint(silent, "Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
+                return 1
+            else:
+                myprint(silent, "UNSUPPORTED")
+                return 1
+    except HTTPError as e:
+        myprint(silent, "CONNECTION ERROR; HTTP %d" % e.code)
+        return 3
+    except URLError as e:
+        myprint(silent, "CONNECTION ERROR; %s" % str(e.reason))
+        return 3
+    except (IOError, OSError) as e:
+        myprint(silent, "SYSTEM ERROR; %s" % str(e))
+        return 4
+    except Exception as e:
+        myprint(silent, "UNEXPECTED ERROR; %s" % str(e))
+        return 5
 
 
 if __name__ == "__main__":
