@@ -118,7 +118,7 @@ class TestIsCompat:
 
     @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_404_error(self, mock_urlopen, mock_hash):
+    def test_is_compat_404_error_returns_false(self, mock_urlopen, mock_hash):
         mock_urlopen.side_effect = HTTPError(None, 404, 'Not Found', None, None)
         assert kc_compat.is_compat() == False
 
@@ -184,11 +184,11 @@ class TestMain:
     @patch.object(kc_compat, 'get_distro_info', return_value=('centos', '7'))
     @patch.object(kc_compat, 'is_distro_supported', return_value=True)
     @patch('builtins.print')
-    def test_main_unsupported_but_distro_supported(self, mock_print, mock_distro_supported, 
-                                                  mock_distro_info, mock_compat, mock_lxc, mock_vz):
+    def test_main_kernel_not_found_but_distro_supported(self, mock_print, mock_distro_supported, 
+                                                      mock_distro_info, mock_compat, mock_lxc, mock_vz):
         result = kc_compat.main()
         assert result == 1
-        mock_print.assert_called_once_with("Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
+        mock_print.assert_called_once_with("We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
 
     @patch('sys.argv', ['kc-compat.py'])
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)
@@ -197,11 +197,11 @@ class TestMain:
     @patch.object(kc_compat, 'get_distro_info', return_value=('unknown', '1'))
     @patch.object(kc_compat, 'is_distro_supported', return_value=False)
     @patch('builtins.print')
-    def test_main_unsupported_distro_not_supported(self, mock_print, mock_distro_supported,
-                                                  mock_distro_info, mock_compat, mock_lxc, mock_vz):
+    def test_main_kernel_not_found_distro_not_supported(self, mock_print, mock_distro_supported,
+                                                      mock_distro_info, mock_compat, mock_lxc, mock_vz):
         result = kc_compat.main()
         assert result == 1
-        mock_print.assert_called_once_with("UNSUPPORTED")
+        mock_print.assert_called_once_with("Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
 
     @patch('sys.argv', ['kc-compat.py', '--silent'])
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)

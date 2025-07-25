@@ -106,7 +106,7 @@ def myprint(silent, message):
 def main():
     """
     if --silent or -q argument provided, don't print anything, just use exit code
-    otherwise print results (COMPATIBLE or UNSUPPORTED)
+    otherwise print results (COMPATIBLE or support contact messages)
     else exit with 0 if COMPATIBLE, 1 or more otherwise
     """
     silent = len(sys.argv) > 1 and (sys.argv[1] == '--silent' or sys.argv[1] == '-q')
@@ -119,13 +119,13 @@ def main():
             myprint(silent, "COMPATIBLE")
             return 0
         else:
-            # Check if distro is supported when kernel is not
+            # Handle 404 case - check if distro is supported
             distro_name, distro_version = get_distro_info()
             if distro_name and distro_version and is_distro_supported(distro_name, distro_version):
-                myprint(silent, "Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
+                myprint(silent, "We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
                 return 1
             else:
-                myprint(silent, "UNSUPPORTED")
+                myprint(silent, "Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
                 return 1
     except HTTPError as e:
         myprint(silent, "CONNECTION ERROR; HTTP %d" % e.code)
