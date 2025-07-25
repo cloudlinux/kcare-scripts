@@ -19,6 +19,21 @@ __status__ = 'Production'
 __version__ = '1.0'
 
 
+SUPPORTED_DISTROS = (
+    "almalinux", 
+    "amzn",
+    "centos",
+    "cloudlinux",
+    "debian",
+    "ol",
+    "raspbian",
+    "rhel",
+    "rocky",
+    "ubuntu", 
+    "proxmox",
+)
+
+
 def get_kernel_hash():
     try:
         # noinspection PyCompatibility
@@ -47,7 +62,7 @@ def inside_lxc_container():
 def get_distro_info():
     """
     Get current distribution name and version
-    :return: tuple (distro_name, distro_version) or (None, None) if detection fails
+    :return: distro name or None if detection fails
     """
     
     def parse_value(line):
@@ -55,33 +70,23 @@ def get_distro_info():
     
     os_release_path = '/etc/os-release'
     if not os.path.exists(os_release_path):
-        return None, None
+        return None
 
-    distro_name = None
-    distro_version = None
-    
     try:
         with open(os_release_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line.startswith('ID='):
-                    distro_name = parse_value(line)
-                elif line.startswith('VERSION_ID='):
-                    distro_version = parse_value(line)
-                if distro_name and distro_version:
-                    break
+                    return parse_value(line)
     except (IOError, OSError):
-        return None, None
-    
-    return distro_name, distro_version
+        return None
 
 
-def is_distro_supported(distro_name, distro_version):
+def is_distro_supported(distro_name):
     """
-    Check if the given distro name and version combination is supported
-    TODO: Implement actual supported distro checking logic
+    Check if the given distro name is supported
     """
-    return False
+    return distro_name in SUPPORTED_DISTROS
 
 
 def is_compat():
@@ -120,8 +125,8 @@ def main():
             return 0
         else:
             # Handle 404 case - check if distro is supported
-            distro_name, distro_version = get_distro_info()
-            if distro_name and distro_version and is_distro_supported(distro_name, distro_version):
+            distro_name = get_distro_info()
+            if distro_name and is_distro_supported(distro_name):
                 myprint(silent, "We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
                 return 1
             else:

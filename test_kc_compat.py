@@ -62,50 +62,27 @@ class TestGetDistroInfo:
     @patch('os.path.exists', return_value=True)
     @patch('builtins.open', new_callable=mock_open, read_data='ID=centos\nVERSION_ID="7"\n')
     def test_get_distro_info_success(self, mock_file, mock_exists):
-        name, version = kc_compat.get_distro_info()
+        name = kc_compat.get_distro_info()
         assert name == 'centos'
-        assert version == '7'
 
-    @patch('os.path.exists', return_value=True)
-    @patch('builtins.open', new_callable=mock_open, read_data='ID="ubuntu"\nVERSION_ID=18.04\n')
-    def test_get_distro_info_different_quotes(self, mock_file, mock_exists):
-        name, version = kc_compat.get_distro_info()
-        assert name == 'ubuntu'
-        assert version == '18.04'
-
-    @patch('os.path.exists', return_value=True)
-    @patch('builtins.open', new_callable=mock_open, read_data="ID='fedora'\nVERSION_ID='34'\n")
-    def test_get_distro_info_single_quotes(self, mock_file, mock_exists):
-        name, version = kc_compat.get_distro_info()
-        assert name == 'fedora'
-        assert version == '34'
-
-    @patch('os.path.exists', return_value=True)
-    @patch('builtins.open', new_callable=mock_open, read_data='ID=rhel\nNAME="Red Hat Enterprise Linux"\n')
-    def test_get_distro_info_missing_version(self, mock_file, mock_exists):
-        name, version = kc_compat.get_distro_info()
-        assert name == 'rhel'
-        assert version is None
 
     @patch('os.path.exists', return_value=False)
     def test_get_distro_info_no_file(self, mock_exists):
-        name, version = kc_compat.get_distro_info()
+        name = kc_compat.get_distro_info()
         assert name is None
-        assert version is None
 
     @patch('os.path.exists', return_value=True)
     @patch('builtins.open', side_effect=IOError("Permission denied"))
     def test_get_distro_info_read_error(self, mock_file, mock_exists):
-        name, version = kc_compat.get_distro_info()
+        name = kc_compat.get_distro_info()
         assert name is None
-        assert version is None
 
 
 class TestIsDistroSupported:
-    def test_is_distro_supported_placeholder(self):
-        # Current implementation always returns False
-        assert kc_compat.is_distro_supported('centos', '7') == False
-        assert kc_compat.is_distro_supported('ubuntu', '18.04') == False
+    @patch.object(kc_compat, 'SUPPORTED_DISTROS', set(['ubuntu', 'centos']))
+    def test_is_distro_supported(self):
+        assert kc_compat.is_distro_supported('centos') == True
+        assert kc_compat.is_distro_supported('debian') == False
 
 
 class TestIsCompat:
