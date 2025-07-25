@@ -75,12 +75,11 @@ python kc-compat.py [--silent|-q]
 ```
 
 Outputs:
-- COMPATIBLE if kernel supported
-- UNSUPPORTED messages for unsupported kernels (with specific guidance based on distribution support)
-- UNSUPPORTED; INSIDE CONTAINER if running inside a container
-- CONNECTION ERROR messages for network issues
-- SYSTEM ERROR messages for file system issues
-- UNEXPECTED ERROR messages for other errors
+- `COMPATIBLE` if kernel supported
+- `UNSUPPORTED; INSIDE CONTAINER` if running inside a container
+- `CONNECTION ERROR; HTTP <code>` or `CONNECTION ERROR; <reason>` for network issues
+- `SYSTEM ERROR; <error>` for file system issues
+- `UNEXPECTED ERROR; <error>` for other errors
 
 If --silent flag is provided -- doesn't print anything
 
