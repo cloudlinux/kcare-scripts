@@ -5,7 +5,6 @@ import importlib.util
 from unittest.mock import patch, mock_open, MagicMock
 from urllib.error import HTTPError, URLError
 
-# Import the module under test using importlib to handle the hyphenated filename
 spec = importlib.util.spec_from_file_location("kc_compat", "kc-compat.py")
 kc_compat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kc_compat)

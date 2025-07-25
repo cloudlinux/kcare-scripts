@@ -45,6 +45,10 @@ def inside_lxc_container():
 
 
 def get_distro_info():
+    """
+    Get current distribution name and version
+    :return: tuple (distro_name, distro_version) or (None, None) if detection fails
+    """
     
     def parse_value(line):
         return line.split('=', 1)[1].strip().strip('"\'')
