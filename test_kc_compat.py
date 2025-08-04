@@ -176,7 +176,7 @@ class TestMain:
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)
     @patch.object(kc_compat, 'inside_lxc_container', return_value=False)
     @patch.object(kc_compat, 'is_compat', return_value=False)
-    @patch.object(kc_compat, 'get_distro_info', return_value=('unknown', '1'))
+    @patch.object(kc_compat, 'get_distro_info', return_value='unknown')
     @patch.object(kc_compat, 'is_distro_supported', return_value=False)
     @patch('builtins.print')
     def test_main_kernel_not_found_distro_not_supported(self, mock_print, mock_distro_supported,
