@@ -165,20 +165,30 @@ class TestMain:
                                                       mock_distro_info, mock_compat, mock_lxc, mock_vz):
         result = kc_compat.main()
         assert result == 1
-        mock_print.assert_called_once_with("We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
+        # Expect two print calls: status + detailed message
+        expected_calls = [
+            (("NEEDS REVIEW",),),
+            (("We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support",),)
+        ]
+        mock_print.assert_has_calls(expected_calls)
 
     @patch('sys.argv', ['kc-compat.py'])
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)
     @patch.object(kc_compat, 'inside_lxc_container', return_value=False)
     @patch.object(kc_compat, 'is_compat', return_value=False)
-    @patch.object(kc_compat, 'get_distro_info', return_value='unknown')
+    @patch.object(kc_compat, 'get_distro_info', return_value=('unknown', '1'))
     @patch.object(kc_compat, 'is_distro_supported', return_value=False)
     @patch('builtins.print')
     def test_main_kernel_not_found_distro_not_supported(self, mock_print, mock_distro_supported,
                                                       mock_distro_info, mock_compat, mock_lxc, mock_vz):
         result = kc_compat.main()
         assert result == 1
-        mock_print.assert_called_once_with("Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
+        # Expect two print calls: status + detailed message
+        expected_calls = [
+            (("NEEDS REVIEW",),),
+            (("Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support",),)
+        ]
+        mock_print.assert_has_calls(expected_calls)
 
     @patch('sys.argv', ['kc-compat.py', '--silent'])
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)

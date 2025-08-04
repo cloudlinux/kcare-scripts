@@ -19,7 +19,7 @@ __status__ = 'Production'
 __version__ = '1.0'
 
 
-SUPPORTED_DISTROS = (
+SUPPORTED_DISTROS = {
     "almalinux", 
     "amzn",
     "centos",
@@ -31,7 +31,7 @@ SUPPORTED_DISTROS = (
     "rocky",
     "ubuntu", 
     "proxmox",
-)
+}
 
 
 def get_kernel_hash():
@@ -127,9 +127,11 @@ def main():
             # Handle 404 case - check if distro is supported
             distro_name = get_distro_info()
             if distro_name and is_distro_supported(distro_name):
+                myprint(silent, "NEEDS REVIEW")
                 myprint(silent, "We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
                 return 1
             else:
+                myprint(silent, "NEEDS REVIEW")
                 myprint(silent, "Please contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")
                 return 1
     except HTTPError as e:
