@@ -76,6 +76,7 @@ python kc-compat.py [--silent|-q]
 
 Outputs:
 - `COMPATIBLE` if kernel supported
+- `NEEDS REVIEW` manual validation is required
 - `UNSUPPORTED; INSIDE CONTAINER` if running inside a container
 - `CONNECTION ERROR; HTTP <code>` or `CONNECTION ERROR; <reason>` for network issues
 - `SYSTEM ERROR; <error>` for file system issues
@@ -85,7 +86,7 @@ If --silent flag is provided -- doesn't print anything
 
 Exit codes:
 - 0: compatible
-- 1: unsupported
+- 1: needs review
 - 2: unsupported, inside container
 - 3: connection error
 - 4: system error
@@ -93,12 +94,12 @@ Exit codes:
 
 Alternatively you can use: 
 ```bash
-curl -s https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py|python
+curl -s https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py | python
 ```
 
 or
 ```bash
-wget -qq -O - https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py|python
+wget -qq -O - https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py | python
 ```
 
 _Note: You cannot use exit code in this case, only output_
