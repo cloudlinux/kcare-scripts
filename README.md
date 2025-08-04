@@ -1,6 +1,6 @@
 # KernelChecker
 
-_kernelcheker.py_
+## kernelcheker.py
 KernelChecker was created to allow control panels to easily detect & advise
 users on updating running kernel. It can be used to promote KernelCare
 through the control panel. One of the goals behind creating this script was to to make it easier for control
@@ -67,25 +67,39 @@ else if needs_update == False {
 ```
 
 
-_kc-compat.py_
+## kc-compat.py
 Checks if server is running kernel compatible with KernelCare.
 Usage:
 ```bash
 python kc-compat.py [--silent|-q]
 ```
 
-Outputs COMPATIBLE if kernel supported, UNSUPPORTED and UNSUPPORTED; INSIDE CONTAINER
-if --silent flag is provided -- doesn't print anything
-Produces exit code 0 if compatible; 1 unsupported; 2 unsupported, inside container
+Outputs:
+- `COMPATIBLE` if kernel supported
+- `NEEDS REVIEW` manual validation is required
+- `UNSUPPORTED; INSIDE CONTAINER` if running inside a container
+- `CONNECTION ERROR; HTTP <code>` or `CONNECTION ERROR; <reason>` for network issues
+- `SYSTEM ERROR; <error>` for file system issues
+- `UNEXPECTED ERROR; <error>` for other errors
+
+If --silent flag is provided -- doesn't print anything
+
+Exit codes:
+- 0: compatible
+- 1: needs review
+- 2: unsupported, inside container
+- 3: connection error
+- 4: system error
+- 5: unexpected error
 
 Alternatively you can use: 
 ```bash
-curl -s https://raw.githubusercontent.com/iseletsk/kernelchecker/master/py/kc-compat.py|python
+curl -s https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py | python
 ```
 
 or
 ```bash
-wget -qq -O - https://raw.githubusercontent.com/iseletsk/kernelchecker/master/py/kc-compat.py|python
+wget -qq -O - https://raw.githubusercontent.com/cloudlinux/kcare-scripts/master/kc-compat.py | python
 ```
 
 _Note: You cannot use exit code in this case, only output_
