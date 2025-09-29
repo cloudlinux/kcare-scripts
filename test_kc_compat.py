@@ -11,17 +11,13 @@ spec.loader.exec_module(kc_compat)
 
 
 class TestGetKernelHash:
-    @patch('builtins.open', new_callable=mock_open, read_data=b'Linux version 5.4.0-test')
-    def test_get_kernel_hash_success(self, mock_file):
-        result = kc_compat.get_kernel_hash()
+    def test_get_kernel_hash_from_data(self):
+        version_data = b'Linux version 5.4.0-test'
+        result = kc_compat.get_kernel_hash_from_data(version_data)
         assert isinstance(result, str)
         assert len(result) == 40  # SHA1 hex digest length
-        mock_file.assert_called_once_with('/proc/version', 'rb')
 
-    @patch('builtins.open', side_effect=IOError("File not found"))
-    def test_get_kernel_hash_file_error(self, mock_file):
-        with pytest.raises(IOError):
-            kc_compat.get_kernel_hash()
+
 
 
 class TestContainerDetection:
@@ -62,20 +58,22 @@ class TestGetDistroInfo:
     @patch('os.path.exists', return_value=True)
     @patch('builtins.open', new_callable=mock_open, read_data='ID=centos\nVERSION_ID="7"\n')
     def test_get_distro_info_success(self, mock_file, mock_exists):
-        name = kc_compat.get_distro_info()
+        name, version = kc_compat.get_distro_info()
         assert name == 'centos'
-
+        assert version == '7'
 
     @patch('os.path.exists', return_value=False)
     def test_get_distro_info_no_file(self, mock_exists):
-        name = kc_compat.get_distro_info()
+        name, version = kc_compat.get_distro_info()
         assert name is None
+        assert version is None
 
     @patch('os.path.exists', return_value=True)
     @patch('builtins.open', side_effect=IOError("Permission denied"))
     def test_get_distro_info_read_error(self, mock_file, mock_exists):
-        name = kc_compat.get_distro_info()
+        name, version = kc_compat.get_distro_info()
         assert name is None
+        assert version is None
 
 
 class TestIsDistroSupported:
@@ -86,32 +84,28 @@ class TestIsDistroSupported:
 
 
 class TestIsCompat:
-    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_success(self, mock_urlopen, mock_hash):
+    def test_is_compat_success(self, mock_urlopen):
         mock_urlopen.return_value = MagicMock()
-        assert kc_compat.is_compat() == True
+        assert kc_compat.is_compat('abcdef123456') == True
         mock_urlopen.assert_called_once_with('http://patches.kernelcare.com/abcdef123456/version')
 
-    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_404_error_returns_false(self, mock_urlopen, mock_hash):
+    def test_is_compat_404_error_returns_false(self, mock_urlopen):
         mock_urlopen.side_effect = HTTPError(None, 404, 'Not Found', None, None)
-        assert kc_compat.is_compat() == False
+        assert kc_compat.is_compat('abcdef123456') == False
 
-    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_500_error_raises(self, mock_urlopen, mock_hash):
+    def test_is_compat_500_error_raises(self, mock_urlopen):
         mock_urlopen.side_effect = HTTPError(None, 500, 'Server Error', None, None)
         with pytest.raises(HTTPError):
-            kc_compat.is_compat()
+            kc_compat.is_compat('abcdef123456')
 
-    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_url_error_raises(self, mock_urlopen, mock_hash):
+    def test_is_compat_url_error_raises(self, mock_urlopen):
         mock_urlopen.side_effect = URLError('Connection refused')
         with pytest.raises(URLError):
-            kc_compat.is_compat()
+            kc_compat.is_compat('abcdef123456')
 
 
 class TestMyprint:
@@ -158,7 +152,7 @@ class TestMain:
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)
     @patch.object(kc_compat, 'inside_lxc_container', return_value=False)
     @patch.object(kc_compat, 'is_compat', return_value=False)
-    @patch.object(kc_compat, 'get_distro_info', return_value='centos')
+    @patch.object(kc_compat, 'get_distro_info', return_value=('centos', '7'))
     @patch.object(kc_compat, 'is_distro_supported', return_value=True)
     @patch('builtins.print')
     def test_main_kernel_not_found_but_distro_supported(self, mock_print, mock_distro_supported, 
@@ -176,7 +170,7 @@ class TestMain:
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)
     @patch.object(kc_compat, 'inside_lxc_container', return_value=False)
     @patch.object(kc_compat, 'is_compat', return_value=False)
-    @patch.object(kc_compat, 'get_distro_info', return_value='unknown')
+    @patch.object(kc_compat, 'get_distro_info', return_value=('unknown', None))
     @patch.object(kc_compat, 'is_distro_supported', return_value=False)
     @patch('builtins.print')
     def test_main_kernel_not_found_distro_not_supported(self, mock_print, mock_distro_supported,
@@ -199,6 +193,31 @@ class TestMain:
         result = kc_compat.main()
         assert result == 0
         mock_print.assert_not_called()
+
+    @patch('sys.argv', ['kc-compat.py', '--report'])
+    @patch.object(kc_compat, 'get_distro_info', return_value=('centos', '7'))
+    @patch.object(kc_compat, 'inside_vz_container', return_value=False)
+    @patch.object(kc_compat, 'inside_lxc_container', return_value=False)
+    @patch.object(kc_compat, 'is_compat', return_value=True)
+    @patch('builtins.open', new_callable=mock_open, read_data=b'Linux version 5.4.0-test')
+    @patch('builtins.print')
+    def test_main_report_mode(self, mock_print, mock_file, mock_compat, mock_lxc, mock_vz, mock_distro):
+        result = kc_compat.main()
+        assert result == 0
+        # Check that report header and information are printed, followed by COMPATIBLE
+        # We need to check the actual calls made, not exact matches
+        calls = mock_print.call_args_list
+        assert len(calls) >= 7  # At least 7 print calls
+        
+        # Check specific calls
+        assert calls[0].args[0] == "=== KernelCare Compatibility Report ==="
+        assert calls[1].args[0].startswith("Kernel Hash: ")
+        assert calls[2].args[0] == "Distribution: centos"
+        assert calls[3].args[0] == "Version: 7"
+        assert calls[4].args[0] == "Kernel: Linux version 5.4.0-test"
+        assert calls[5].args[0] == "====================================="
+        assert calls[6].args[0] == "COMPATIBLE"
+
 
     @patch('sys.argv', ['kc-compat.py'])
     @patch.object(kc_compat, 'inside_vz_container', return_value=False)

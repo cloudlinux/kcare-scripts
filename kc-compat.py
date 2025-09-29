@@ -34,17 +34,13 @@ SUPPORTED_DISTROS = {
 }
 
 
-def get_kernel_hash():
+def get_kernel_hash_from_data(version_data):
     try:
         # noinspection PyCompatibility
         from hashlib import sha1
     except ImportError:
         from sha import sha as sha1
-    f = open('/proc/version', 'rb')
-    try:
-        return sha1(f.read()).hexdigest()
-    finally:
-        f.close()
+    return sha1(version_data).hexdigest()
 
 
 def inside_vz_container():
@@ -62,7 +58,7 @@ def inside_lxc_container():
 def get_distro_info():
     """
     Get current distribution name and version
-    :return: distro name or None if detection fails
+    :return: tuple of (distro_name, distro_version) or (None, None) if detection fails
     """
     
     def parse_value(line):
@@ -70,16 +66,21 @@ def get_distro_info():
     
     os_release_path = '/etc/os-release'
     if not os.path.exists(os_release_path):
-        return None
+        return None, None
 
     try:
+        distro_name = None
+        distro_version = None
         with open(os_release_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line.startswith('ID='):
-                    return parse_value(line)
+                    distro_name = parse_value(line)
+                elif line.startswith('VERSION_ID='):
+                    distro_version = parse_value(line)
+        return distro_name, distro_version
     except (IOError, OSError):
-        return None
+        return None, None
 
 
 def is_distro_supported(distro_name):
@@ -89,8 +90,8 @@ def is_distro_supported(distro_name):
     return distro_name in SUPPORTED_DISTROS
 
 
-def is_compat():
-    url = 'http://patches.kernelcare.com/' + get_kernel_hash() + '/version'
+def is_compat(kernel_hash):
+    url = 'http://patches.kernelcare.com/' + kernel_hash + '/version'
     try:
         urlopen(url)
         return True
@@ -111,21 +112,40 @@ def myprint(silent, message):
 def main():
     """
     if --silent or -q argument provided, don't print anything, just use exit code
+    if --report provided, show system information for support
     otherwise print results (COMPATIBLE or support contact messages)
     else exit with 0 if COMPATIBLE, 1 or more otherwise
     """
     silent = len(sys.argv) > 1 and (sys.argv[1] == '--silent' or sys.argv[1] == '-q')
+    report = len(sys.argv) > 1 and sys.argv[1] == '--report'
+
     if inside_vz_container() or inside_lxc_container():
         myprint(silent, "UNSUPPORTED; INSIDE CONTAINER")
         return 2
+
+    try:
+        with open('/proc/version', 'rb') as f:
+            version_data = f.read()
+    except (IOError, OSError):
+        version_data = b''
+    
+    kernel_hash = get_kernel_hash_from_data(version_data)
+    distro_name, distro_version = get_distro_info()
+
+    if report:
+        print("=== KernelCare Compatibility Report ===")
+        print(f"Kernel Hash: {kernel_hash}")
+        print(f"Distribution: {distro_name or 'Unknown'}")
+        print(f"Version: {distro_version or 'Unknown'}")
+        print(f"Kernel: {version_data.decode('utf-8', errors='replace').strip()}")
+        print("=====================================")
     
     try:
-        if is_compat():
+        if is_compat(kernel_hash):
             myprint(silent, "COMPATIBLE")
             return 0
         else:
             # Handle 404 case - check if distro is supported
-            distro_name = get_distro_info()
             if distro_name and is_distro_supported(distro_name):
                 myprint(silent, "NEEDS REVIEW")
                 myprint(silent, "We support your distribution, but we're having trouble detecting your precise kernel configuration. Please, contact CloudLinux Inc. support by email at support@cloudlinux.com or by request form at https://www.cloudlinux.com/index.php/support")

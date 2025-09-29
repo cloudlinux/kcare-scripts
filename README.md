@@ -71,7 +71,7 @@ else if needs_update == False {
 Checks if server is running kernel compatible with KernelCare.
 Usage:
 ```bash
-python kc-compat.py [--silent|-q]
+python kc-compat.py [--silent|-q|--report]
 ```
 
 Outputs:
@@ -81,6 +81,26 @@ Outputs:
 - `CONNECTION ERROR; HTTP <code>` or `CONNECTION ERROR; <reason>` for network issues
 - `SYSTEM ERROR; <error>` for file system issues
 - `UNEXPECTED ERROR; <error>` for other errors
+
+### Flags:
+- `--silent` or `-q`: Silent mode - no output, only exit codes
+- `--report`: Generate system information report for support team
+
+### Report Mode:
+When using `--report`, the script outputs detailed system information followed by the compatibility status:
+
+```
+=== KernelCare Compatibility Report ===
+Kernel Hash: abcdef1234567890abcdef1234567890abcdef12
+Distribution: centos
+Version: 7
+Kernel: Linux version 5.4.0-74-generic (buildd@lcy01-amd64-023) (gcc version 9.3.0)
+Environment: Physical/Virtual Machine
+=====================================
+COMPATIBLE
+```
+
+This information can be easily shared with the support team for troubleshooting.
 
 If --silent flag is provided -- doesn't print anything
 
