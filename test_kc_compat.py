@@ -85,19 +85,69 @@ class TestIsDistroSupported:
         assert kc_compat.is_distro_supported('debian') == False
 
 
-class TestIsCompat:
-    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
+class TestCheckUrl:
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_success(self, mock_urlopen, mock_hash):
+    def test_check_url_success(self, mock_urlopen):
         mock_urlopen.return_value = MagicMock()
-        assert kc_compat.is_compat() == True
-        mock_urlopen.assert_called_once_with('http://patches.kernelcare.com/abcdef123456/version')
+        assert kc_compat._check_url('http://example.com') == True
+
+    @patch.object(kc_compat, 'urlopen')
+    def test_check_url_404(self, mock_urlopen):
+        mock_urlopen.side_effect = HTTPError(None, 404, 'Not Found', None, None)
+        assert kc_compat._check_url('http://example.com') == False
+
+    @patch.object(kc_compat, 'urlopen')
+    def test_check_url_500_raises(self, mock_urlopen):
+        mock_urlopen.side_effect = HTTPError(None, 500, 'Server Error', None, None)
+        with pytest.raises(HTTPError):
+            kc_compat._check_url('http://example.com')
+
+    @patch.object(kc_compat, 'urlopen')
+    def test_check_url_url_error_raises(self, mock_urlopen):
+        mock_urlopen.side_effect = URLError('Connection refused')
+        with pytest.raises(URLError):
+            kc_compat._check_url('http://example.com')
+
+
+class TestIsCompat:
+    BASE = 'http://patches.kernelcare.com/abcdef123456'
 
     @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')
-    def test_is_compat_404_error_returns_false(self, mock_urlopen, mock_hash):
+    def test_is_compat_version_hit(self, mock_urlopen, mock_hash):
+        mock_urlopen.return_value = MagicMock()
+        assert kc_compat.is_compat() == True
+        mock_urlopen.assert_called_once_with(self.BASE + '/version')
+
+    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
+    @patch.object(kc_compat, 'urlopen')
+    def test_is_compat_fallback_to_v2(self, mock_urlopen, mock_hash):
+        mock_urlopen.side_effect = [
+            HTTPError(None, 404, 'Not Found', None, None),
+            MagicMock(),
+        ]
+        assert kc_compat.is_compat() == True
+        assert mock_urlopen.call_count == 2
+        mock_urlopen.assert_called_with(self.BASE + '/latest.v2')
+
+    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
+    @patch.object(kc_compat, 'urlopen')
+    def test_is_compat_fallback_to_v3(self, mock_urlopen, mock_hash):
+        mock_urlopen.side_effect = [
+            HTTPError(None, 404, 'Not Found', None, None),
+            HTTPError(None, 404, 'Not Found', None, None),
+            MagicMock(),
+        ]
+        assert kc_compat.is_compat() == True
+        assert mock_urlopen.call_count == 3
+        mock_urlopen.assert_called_with(self.BASE + '/latest.v3')
+
+    @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
+    @patch.object(kc_compat, 'urlopen')
+    def test_is_compat_all_404_returns_false(self, mock_urlopen, mock_hash):
         mock_urlopen.side_effect = HTTPError(None, 404, 'Not Found', None, None)
         assert kc_compat.is_compat() == False
+        assert mock_urlopen.call_count == 3
 
     @patch.object(kc_compat, 'get_kernel_hash', return_value='abcdef123456')
     @patch.object(kc_compat, 'urlopen')

@@ -89,18 +89,24 @@ def is_distro_supported(distro_name):
     return distro_name in SUPPORTED_DISTROS
 
 
-def is_compat():
-    url = 'http://patches.kernelcare.com/' + get_kernel_hash() + '/version'
+def _check_url(url):
     try:
         urlopen(url)
         return True
     except HTTPError as e:
         if e.code == 404:
             return False
-        else:
-            raise
+        raise
     except URLError:
         raise
+
+
+def is_compat():
+    base = 'http://patches.kernelcare.com/' + get_kernel_hash()
+    for endpoint in ('/version', '/latest.v2', '/latest.v3'):
+        if _check_url(base + endpoint):
+            return True
+    return False
 
 
 def myprint(silent, message):
